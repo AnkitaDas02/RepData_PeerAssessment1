@@ -1,25 +1,109 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Course 5 Project 1"
+output: html_document
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
-## Loading and preprocessing the data
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r project, echo=TRUE}
+#importing data
+Activity <- read.csv("C:\\Users\\Ankita Das\\Documents\\Self Study\\R\\Course 5\\Week2\\activity.csv",header = TRUE, sep = ",", quote = "\"",dec = ".")
+
+# Mean
+#Ignore Missing values
+Activity_noNA <- na.omit(Activity)
+#calculating total stpes taken per day
+TotalStepsPerDay <- aggregate(x = Activity_noNA$steps, by = list(Activity_noNA$date), FUN = sum)
+#creating histogram
+p1 <- hist(TotalStepsPerDay$x,xlab = "Number of Steps", ylab = "Frequency", main = "Histogram of total steps taken each day")
+#Excluding 0's from dataset
+Activity_no0 <- Activity_noNA[Activity_noNA[ , "steps"]>0,]
+#Mean and median of total steps taken
+mean(Activity_no0$steps)
+median(Activity_no0$steps)
+
+#plotting steps and its average
+time_series <- tapply(Activity$steps, Activity$interval, mean, na.rm = TRUE)
+plot(x = row.names(time_series), y = time_series, type = "l", xlab = "5-min interval", 
+     ylab = "Average across all days", main = "Average number of steps taken", 
+     col = "blue")
+#5min interval, average across all the days in the dataset, contains the maximum number of steps
+ which.max(time_series)
+
+#Imputing Missing values
+#Getting total number of NAs
+sum(is.na(Activity$steps))
+#Getting mean of intervals
+MeanStepsPerinterval <- aggregate(x = Activity_noNA$steps, by = list(Activity_noNA$interval), FUN = mean)
+colnames(MeanStepsPerinterval) <- c("interval", "intervalmean")
+#merging for replacing NA
+Activity_merge <- merge(x=Activity, y=MeanStepsPerinterval, by = "interval")
+#Replacing NAs
+StepswithoutNA <- replace(Activity_merge$steps, is.na(Activity_merge$steps), Activity_merge$intervalmean)
+Activity_merge_steps <- cbind(Activity_merge,StepswithoutNA)
+#Dataset with NAs replaced
+ActivitywithNAreplaced <- Activity_merge_steps[ , names(Activity_merge_steps) %in% c("date", "interval", "StepswithoutNA")]
+colnames(ActivitywithNAreplaced) <- c("interval", "date", "steps")
+ActivitywithNAreplaced[is.na("steps")] <- 0
+#histogram
+TotalStepsPerDayNAreplaced <- aggregate(x = ActivitywithNAreplaced$steps, by = list(ActivitywithNAreplaced$date), FUN = sum)
+par(mfrow=c(1,2))
+hist(TotalStepsPerDayNAreplaced$x, xlab = "Stepsperday", main = "Histogram - NAs replaced")
+hist(TotalStepsPerDay$x, xlab = "Stepsperday", main = "Histogram - with NAs")
+
+#Mean and median after replacing NAs
+mean(ActivitywithNAreplaced$steps)
+median(ActivitywithNAreplaced$steps)
+
+#Variable for weekday
+Activity$date <- as.Date(Activity$date, format = ("%Y-%m-%d"))
+Activity_weekdays <- cbind(Activity, weekdays(Activity$date))
+#Function for categorizing weekday and weekend
+typeOfWeek <- function(day){
+  if (day %in% c("Saturday", "Sunday")) {
+    return("Weekend")
+  } 
+  else {
+    return("Weekday")
+  }
+} 
+
+colnames(Activity_weekdays) <- c("steps", "date", "interval", "days")
+Activity_weekdays$dayType <- factor(sapply(X = Activity_weekdays$days, FUN = typeOfWeek))
+Activity_weekday <- subset(x = Activity_weekdays, dayType == "Weekday")
+Activity_weekend <- subset(x = Activity_weekdays, dayType == "Weekend")
+
+#Panel plot
+par(mfrow = c(2, 1),mar=rep(0,4), oma = c(4,4,3,3))
+#Weekday Timeseries
+time_series <- tapply(Activity_weekday$steps, Activity_weekday$interval, mean, na.rm = TRUE)
+plot(x = row.names(time_series), y = time_series, type = "l", xlab = "", 
+     ylab = "", main = "", axes = FALSE,
+     col = "blue")
+mtext("Weekdays", side = 3, line = -1)
+# Add box around first plot region
+box(); axis(2, labels=FALSE); axis(3, labels=FALSE); axis(4)
+
+## Weekend Timeseries
+time_series <- tapply(Activity_weekend$steps, Activity_weekend$interval, mean, na.rm = TRUE)
+
+plot(x = row.names(time_series), y = time_series, type = "l", xlab = "", 
+     ylab = "", main = "", axes = FALSE,
+     col = "blue")
+mtext("Weekends", side = 3, line = -1)
+
+box()
+# Add box around first plot region
+box()
+axis(1);axis(2)
 
 
-
-## What is mean total number of steps taken per day?
-
-
-
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
+```
